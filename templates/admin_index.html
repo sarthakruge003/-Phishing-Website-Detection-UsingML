@@ -1,0 +1,227 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Admin Dashboard - Phishing URL Detection</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet" integrity="sha384-QWTKZyjpPEjISv5WaRU9OFeRpok6YctnYmDr5pNlyT2bRjXh0JMhjY6hW+ALEwIH" crossorigin="anonymous">
+    <style>
+        body {
+            font-family: 'Ubuntu', sans-serif;
+            background-color: #f0f8ff;
+        }
+        .navbar {
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+        }
+        .content {
+            padding: 60px 0;
+        }
+        .footer {
+            background-color: #343a40;
+            color: white;
+            padding: 20px 0;
+            text-align: center;
+        }
+        .form-control {
+            transition: transform 0.3s ease-in-out;
+        }
+        .form-control:focus {
+            transform: scale(1.05);
+            box-shadow: 0 0 10px rgba(0, 123, 255, 0.5);
+        }
+        .btn {
+            transition: transform 0.3s ease-in-out, background-color 0.3s ease;
+            font-size: 1.2rem;
+            padding: 12px 24px;
+        }
+        .btn-primary, .btn-danger, .btn-info {
+            animation: bounceIn 1s ease-in-out;
+        }
+        .btn:hover {
+            transform: scale(1.1);
+            background-color: #0056b3;
+        }
+        .btn-danger:hover {
+            background-color: #d43f1a;
+        }
+        .btn-info:hover {
+            background-color: #17a2b8;
+        }
+        @keyframes bounceIn {
+            from, 20%, 50%, 80%, to {
+                transform: scale(1);
+            }
+            40% {
+                transform: scale(1.3);
+            }
+            60% {
+                transform: scale(1.2);
+            }
+        }
+        .card {
+            border-radius: 15px;
+        }
+        .blocklist {
+            display: none;
+            margin-top: 20px;
+        }
+        .btn-info {
+            margin-top: 20px;
+        }
+        .bg-light-custom {
+            background-color: #f8f9fa !important;
+        }
+        .highlight {
+            background-color: #e9ecef;
+            border-radius: 10px;
+            padding: 20px;
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+        }
+    </style>
+</head>
+<body>
+    <!-- Navbar -->
+    <nav class="navbar navbar-expand-lg navbar-light bg-light">
+        <div class="container">
+            <a class="navbar-brand" href="#">Phishing URL Detection</a>
+            <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav" aria-controls="navbarNav" aria-expanded="false" aria-label="Toggle navigation">
+                <span class="navbar-toggler-icon"></span>
+            </button>
+            <div class="collapse navbar-collapse" id="navbarNav">
+                <ul class="navbar-nav ms-auto">
+                    <li class="nav-item">
+                        <a class="nav-link" href="/admin">Home</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="/about_admin">About</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="/contact_admin">Contact</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="/logout">Logout</a>
+                    </li>
+                </ul>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Main Content -->
+    <div class="container content">
+        <div class="row justify-content-center">
+            <div class="col-12 text-center">
+                <h2 class="fw-bold display-4 text-primary mb-5">Admin Dashboard</h2>
+
+                {% if blocklist_status %}
+                    <div class="alert alert-warning" role="alert">
+                        {{ blocklist_status }}
+                    </div>
+                {% endif %}
+
+                <!-- URL Prediction Form -->
+                <div class="highlight mb-4">
+                    <h4 class="mb-4">URL Prediction</h4>
+                    <form method="POST">
+                        <div class="mb-3">
+                            <input type="text" class="form-control" name="url" placeholder="Enter URL for prediction" required>
+                        </div>
+                        <button type="submit" class="btn btn-primary">Predict URL</button>
+                    </form>
+                </div>
+
+                {% if data %}
+                    <div class="card mb-4">
+                        <div class="card-body">
+                            <h5 class="card-title">Prediction Result</h5>
+                            <p class="card-text"><strong>URL:</strong> {{ data.url }}</p>
+                            <p class="card-text"><strong>Prediction:</strong> {{ data.prediction_label }}</p>
+                            <p class="card-text"><strong>Confidence Score:</strong> {{ data.prediction_score }}%</p>
+                        </div>
+                    </div>
+                {% endif %}
+
+                <!-- Blocklist Management Form -->
+                <div class="highlight mb-4">
+                    <h4 class="mb-4">Blocklist Management</h4>
+                    <form method="POST" class="mb-4">
+                        <div class="mb-3">
+                            <input type="text" class="form-control" name="url" placeholder="Enter URL to blocklist" required>
+                        </div>
+                        <button type="submit" name="add_to_blocklist" class="btn btn-danger">Add to Blocklist</button>
+                    </form>
+
+                    <!-- View Blocklisted URLs Button -->
+                    <button class="btn btn-info" id="viewBlocklistBtn">View Blocklisted URLs</button>
+                    <div class="blocklist" id="blocklistContainer">
+                        <h4 class="mt-4">Blocklisted URLs</h4>
+                        <ul id="blocklist" class="list-group">
+                            <!-- Blocklisted URLs will be injected here -->
+                        </ul>
+                    </div>
+                </div>
+
+                <!-- Statistics Card -->
+                <div class="highlight">
+                    <h4 class="mb-4">Dashboard Statistics</h4>
+                    <div class="row">
+                        <div class="col-md-4 mb-4">
+                            <div class="card bg-light-custom">
+                                <div class="card-body text-center">
+                                    <h5 class="card-title">Total URLs Checked</h5>
+                                    <p class="card-text">123</p> <!-- Replace with actual data -->
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-4 mb-4">
+                            <div class="card bg-light-custom">
+                                <div class="card-body text-center">
+                                    <h5 class="card-title">Safe URLs</h5>
+                                    <p class="card-text">89</p> <!-- Replace with actual data -->
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-4 mb-4">
+                            <div class="card bg-light-custom">
+                                <div class="card-body text-center">
+                                    <h5 class="card-title">Unsafe URLs</h5>
+                                    <p class="card-text">34</p> <!-- Replace with actual data -->
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Footer -->
+    <footer class="footer">
+        <p>&copy; 2024 Pratik, Sarthak, Shubham, Dhairyashil. All rights reserved.</p>
+    </footer>
+
+    <!-- JavaScript -->
+    <script src="https://cdn.jsdelivr.net/npm/@popperjs/core@2.11.8/dist/umd/popper.min.js" integrity="sha384-oBqDVmMz4fnFO9BeBQFYdCwi5A9Q6T+F0h6D/n9e5cdUdy3E3i7jZ2+0VmcOFEAK" crossorigin="anonymous"></script>
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js" integrity="sha384-xcDtb4N9iNC6ZIBqQd5WazrZxP0pTdW9EY2bT9e9s4Ht8gFDt3Oe5Gp4DzXjcL7oI" crossorigin="anonymous"></script>
+    <script>
+        document.getElementById('viewBlocklistBtn').addEventListener('click', function() {
+            const blocklistContainer = document.getElementById('blocklistContainer');
+            blocklistContainer.style.display = blocklistContainer.style.display === 'none' ? 'block' : 'none';
+            
+            if (blocklistContainer.style.display === 'block') {
+                fetch('/get_blocklist')
+                    .then(response => response.json())
+                    .then(data => {
+                        const blocklistElement = document.getElementById('blocklist');
+                        blocklistElement.innerHTML = ''; // Clear existing list
+                        data.urls.forEach(url => {
+                            const listItem = document.createElement('li');
+                            listItem.className = 'list-group-item';
+                            listItem.textContent = url;
+                            blocklistElement.appendChild(listItem);
+                        });
+                    });
+            }
+        });
+    </script>
+</body>
+</html>
